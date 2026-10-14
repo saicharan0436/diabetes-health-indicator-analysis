@@ -1,94 +1,32 @@
+import os
+import math
+import joblib
+import pandas as pd
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import pandas as pd
-import joblib
-import os
-
 
 # ============================================================
-# 1. FLASK APPLICATION
-# ============================================================
-
-app = Flask(
-    __name__,
-    static_folder="frontend",
-    static_url_path=""
-)
-
-CORS(app)
-
-
-# ============================================================
-# 2. PATHS
+# 1. APPLICATION AND PATHS
 # ============================================================
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-MODEL_PATH = os.path.join(
-    BASE_DIR,
-    "Notebook",
-    "diabetes_model.pkl"
-)
-
+FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
+MODEL_PATH = os.path.join(BASE_DIR, "models", "diabetes_model_deploy.joblib")
 DATA_PATH = os.path.join(
     BASE_DIR,
     "data",
-    "diabetes_012_health_indicators_BRFSS2015.csv"
+    "diabetes_012_health_indicators_BRFSS2015.csv",
 )
 
+app = Flask(
+    __name__,
+    static_folder=FRONTEND_DIR,
+    static_url_path="",
+)
+CORS(app)
 
-# ============================================================
-# 3. LOAD MACHINE LEARNING MODEL
-# ============================================================
-
-model = None
-
-try:
-
-    model = joblib.load(MODEL_PATH)
-
-    print("--------------------------------------------")
-    print("Machine Learning model loaded successfully!")
-    print("Model:", type(model).__name__)
-    print("--------------------------------------------")
-
-except Exception as e:
-
-    print("--------------------------------------------")
-    print("ERROR: Could not load ML model")
-    print(e)
-    print("--------------------------------------------")
-
-
-# ============================================================
-# 4. LOAD DATASET
-# ============================================================
-
-df = None
-
-try:
-
-    df = pd.read_csv(DATA_PATH)
-
-    print("--------------------------------------------")
-    print("Dataset loaded successfully!")
-    print("Rows:", df.shape[0])
-    print("Columns:", df.shape[1])
-    print("--------------------------------------------")
-
-except Exception as e:
-
-    print("--------------------------------------------")
-    print("ERROR: Could not load dataset")
-    print(e)
-    print("--------------------------------------------")
-
-
-# ============================================================
-# 5. MODEL FEATURES
-# ============================================================
-
-features = [
+# Keep this feature order identical to the order used to train the compact model.
+FEATURES = [
     "HighBP",
     "HighChol",
     "BMI",
@@ -106,530 +44,249 @@ features = [
     "Sex",
     "Age",
     "Education",
-    "Income"
+    "Income",
 ]
 
+# ============================================================
+# 2. LOAD THE MODEL AND DATASET
+# ============================================================
+
+model = None
+df = None
+
+try:
+    if os.path.isfile(MODEL_PATH):
+        model = joblib.load(MODEL_PATH)
+        print("Machine Learning model loaded successfully!")
+        print("Model type:", type(model).__name__)
+        print("Model path:", MODEL_PATH)
+    else:
+        print(f"ERROR: Model file not found: {MODEL_PATH}")
+except Exception as exc:
+    print("ERROR: Could not load ML model:", exc)
+
+try:
+    if os.path.isfile(DATA_PATH):
+        df = pd.read_csv(DATA_PATH)
+        print("Dataset loaded successfully!")
+        print("Rows:", df.shape[0])
+        print("Columns:", df.shape[1])
+    else:
+        print(f"WARNING: Dataset file not found: {DATA_PATH}")
+except Exception as exc:
+    print("ERROR: Could not load dataset:", exc)
 
 # ============================================================
-# 6. HOME PAGE
+# 3. PAGES
 # ============================================================
 
 @app.route("/")
 def home():
+    return send_from_directory(FRONTEND_DIR, "index.html")
 
-    return send_from_directory(
-        "frontend",
-        "index.html"
-    )
-
-
-# ============================================================
-# 7. DASHBOARD PAGE
-# ============================================================
 
 @app.route("/dashboard")
 def dashboard():
-
-    return send_from_directory(
-        "frontend",
-        "dashboard.html"
-    )
+    return send_from_directory(FRONTEND_DIR, "dashboard.html")
 
 
 # ============================================================
-# 8. HEALTH CHECK
+# 4. HEALTH CHECK
 # ============================================================
 
 @app.route("/health")
 def health():
-
+    model_loaded = model is not None
+    dataset_loaded = df is not None
     return jsonify({
-
-        "status": "success" if model is not None else "error",
-
+        "status": "success" if model_loaded else "error",
         "message": "Diabetes Screening API is running",
-
-        "model": "loaded" if model is not None else "not loaded",
-
-        "dataset": "loaded" if df is not None else "not loaded"
-
-    })
+        "model": "loaded" if model_loaded else "not loaded",
+        "dataset": "loaded" if dataset_loaded else "not loaded",
+    }), (200 if model_loaded else 503)
 
 
 # ============================================================
-# 9. ANALYTICS API
+# 5. ANALYTICS API
 # ============================================================
 
 @app.route("/api/analytics")
 def analytics():
-
     try:
-
         if df is None:
-
             return jsonify({
                 "success": False,
-                "error": "Dataset is not loaded."
+                "error": "Dataset is not loaded.",
             }), 500
 
+        required_columns = {"Diabetes_012", "BMI", "HighBP", "HighChol", "GenHlth", "Age"}
+        missing_columns = sorted(required_columns.difference(df.columns))
+        if missing_columns:
+            return jsonify({
+                "success": False,
+                "error": "Dataset is missing required columns.",
+                "missing": missing_columns,
+            }), 500
 
-        # ----------------------------------------------------
-        # Target distribution
-        # ----------------------------------------------------
-
-        target_counts = (
-            df["Diabetes_012"]
-            .value_counts()
-            .sort_index()
-        )
-
-
-        no_diabetes = int(
-            target_counts.get(0, 0)
-        )
-
-        prediabetes = int(
-            target_counts.get(1, 0)
-        )
-
-        diabetes = int(
-            target_counts.get(2, 0)
-        )
-
-
-        # ----------------------------------------------------
-        # Average BMI by diabetes class
-        # ----------------------------------------------------
-
-        bmi_by_class = (
-            df.groupby("Diabetes_012")["BMI"]
-            .mean()
-            .round(2)
-        )
-
-
-        # ----------------------------------------------------
-        # High Blood Pressure distribution
-        # ----------------------------------------------------
-
-        high_bp_counts = (
-            df["HighBP"]
-            .value_counts()
-            .sort_index()
-        )
-
-
-        # ----------------------------------------------------
-        # High Cholesterol distribution
-        # ----------------------------------------------------
-
-        high_chol_counts = (
-            df["HighChol"]
-            .value_counts()
-            .sort_index()
-        )
-
-
-        # ----------------------------------------------------
-        # General Health distribution
-        # ----------------------------------------------------
-
-        general_health_counts = (
-            df["GenHlth"]
-            .value_counts()
-            .sort_index()
-        )
-
-
-        # ----------------------------------------------------
-        # Age distribution
-        # ----------------------------------------------------
-
-        age_counts = (
-            df["Age"]
-            .value_counts()
-            .sort_index()
-        )
-
-
-        # ----------------------------------------------------
-        # Return analytics
-        # ----------------------------------------------------
+        target_counts = df["Diabetes_012"].value_counts().sort_index()
+        bmi_by_class = df.groupby("Diabetes_012")["BMI"].mean().round(2)
+        high_bp_counts = df["HighBP"].value_counts().sort_index()
+        high_chol_counts = df["HighChol"].value_counts().sort_index()
+        general_health_counts = df["GenHlth"].value_counts().sort_index()
+        age_counts = df["Age"].value_counts().sort_index()
 
         return jsonify({
-
             "success": True,
-
             "total_records": int(len(df)),
-
-            "total_features": int(
-                len(df.columns) - 1
-            ),
-
-            "target_classes": int(
-                df["Diabetes_012"].nunique()
-            ),
-
+            "total_features": int(len(df.columns) - 1),
+            "target_classes": int(df["Diabetes_012"].nunique()),
             "target_distribution": {
-
-                "no_diabetes": no_diabetes,
-
-                "prediabetes": prediabetes,
-
-                "diabetes": diabetes
-
+                "no_diabetes": int(target_counts.get(0, 0)),
+                "prediabetes": int(target_counts.get(1, 0)),
+                "diabetes": int(target_counts.get(2, 0)),
             },
-
             "bmi_by_class": {
-
-                "no_diabetes": float(
-                    bmi_by_class.get(0, 0)
-                ),
-
-                "prediabetes": float(
-                    bmi_by_class.get(1, 0)
-                ),
-
-                "diabetes": float(
-                    bmi_by_class.get(2, 0)
-                )
-
+                "no_diabetes": float(bmi_by_class.get(0, 0)),
+                "prediabetes": float(bmi_by_class.get(1, 0)),
+                "diabetes": float(bmi_by_class.get(2, 0)),
             },
-
             "high_bp": {
-
-                "no": int(
-                    high_bp_counts.get(0, 0)
-                ),
-
-                "yes": int(
-                    high_bp_counts.get(1, 0)
-                )
-
+                "no": int(high_bp_counts.get(0, 0)),
+                "yes": int(high_bp_counts.get(1, 0)),
             },
-
             "high_cholesterol": {
-
-                "no": int(
-                    high_chol_counts.get(0, 0)
-                ),
-
-                "yes": int(
-                    high_chol_counts.get(1, 0)
-                )
-
+                "no": int(high_chol_counts.get(0, 0)),
+                "yes": int(high_chol_counts.get(1, 0)),
             },
-
             "general_health": {
-
-                "1": int(
-                    general_health_counts.get(1, 0)
-                ),
-
-                "2": int(
-                    general_health_counts.get(2, 0)
-                ),
-
-                "3": int(
-                    general_health_counts.get(3, 0)
-                ),
-
-                "4": int(
-                    general_health_counts.get(4, 0)
-                ),
-
-                "5": int(
-                    general_health_counts.get(5, 0)
-                )
-
+                str(level): int(general_health_counts.get(level, 0))
+                for level in range(1, 6)
             },
-
             "age_distribution": {
-
                 str(int(age)): int(count)
-
-                for age, count
-                in age_counts.items()
-
-            }
-
+                for age, count in age_counts.items()
+            },
         })
-
-
-    except Exception as e:
-
-        print("--------------------------------------------")
-        print("Analytics Error:")
-        print(e)
-        print("--------------------------------------------")
-
-        return jsonify({
-
-            "success": False,
-
-            "error": str(e)
-
-        }), 500
+    except Exception as exc:
+        app.logger.exception("Analytics API error")
+        return jsonify({"success": False, "error": "Could not calculate analytics."}), 500
 
 
 # ============================================================
-# 10. PREDICTION API
+# 6. PREDICTION API
 # ============================================================
 
 @app.route("/predict", methods=["POST"])
 def predict():
-
     try:
-
         if model is None:
-
             return jsonify({
-
                 "success": False,
+                "error": "Machine Learning model is not loaded.",
+            }), 503
 
-                "error":
-                "Machine Learning model is not loaded."
-
-            }), 500
-
-
-        data = request.get_json()
-
-
-        if data is None:
-
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
             return jsonify({
-
                 "success": False,
-
-                "error":
-                "No input data received."
-
+                "error": "Send the input features as a JSON object.",
             }), 400
 
-
-        # ----------------------------------------------------
-        # Check missing features
-        # ----------------------------------------------------
-
-        missing_features = [
-
-            feature
-
-            for feature in features
-
-            if feature not in data
-
-        ]
-
-
+        missing_features = [feature for feature in FEATURES if feature not in data]
         if missing_features:
-
             return jsonify({
-
                 "success": False,
-
-                "error":
-                "Missing input features.",
-
-                "missing":
-                missing_features
-
+                "error": "Missing input features.",
+                "missing": missing_features,
             }), 400
-
-
-        # ----------------------------------------------------
-        # Prepare input
-        # ----------------------------------------------------
 
         input_data = {}
+        for feature in FEATURES:
+            try:
+                value = float(data[feature])
+            except (TypeError, ValueError):
+                return jsonify({
+                    "success": False,
+                    "error": f"Feature '{feature}' must be numeric.",
+                }), 400
 
-        for feature in features:
+            if not math.isfinite(value):
+                return jsonify({
+                    "success": False,
+                    "error": f"Feature '{feature}' must be a finite number.",
+                }), 400
 
-            input_data[feature] = float(
-                data[feature]
-            )
+            input_data[feature] = value
 
-
-        input_df = pd.DataFrame(
-
-            [input_data],
-
-            columns=features
-
-        )
-
-
-        # ----------------------------------------------------
-        # Prediction
-        # ----------------------------------------------------
-
-        prediction = model.predict(
-            input_df
-        )[0]
-
-        prediction = int(prediction)
-
-
-        # ----------------------------------------------------
-        # Probability
-        # ----------------------------------------------------
+        input_df = pd.DataFrame([input_data], columns=FEATURES)
+        prediction = int(model.predict(input_df)[0])
 
         probabilities = None
-
         if hasattr(model, "predict_proba"):
+            raw_probabilities = model.predict_proba(input_df)[0]
+            probabilities = [float(value) for value in raw_probabilities]
 
-            probabilities = model.predict_proba(
-                input_df
-            )[0]
+        result_map = {
+            0: (
+                "No Diabetes",
+                "Lower Risk",
+                "The model predicts a lower likelihood of diabetes based on the provided indicators.",
+            ),
+            1: (
+                "Prediabetes",
+                "Intermediate Risk",
+                "The model predicts an intermediate diabetes-risk category based on the provided indicators.",
+            ),
+            2: (
+                "Diabetes",
+                "Higher Risk",
+                "The model predicts a higher likelihood of diabetes based on the provided indicators.",
+            ),
+        }
 
+        result, risk_level, message = result_map.get(
+            prediction,
+            ("Unknown", "Unknown", "The model returned an unexpected class."),
+        )
 
-        # ----------------------------------------------------
-        # Result
-        # ----------------------------------------------------
-
-        if prediction == 0:
-
-            result = "No Diabetes"
-
-            risk_level = "Lower Risk"
-
-            message = (
-                "The model predicts a lower likelihood "
-                "of diabetes based on the provided indicators."
-            )
-
-
-        elif prediction == 1:
-
-            result = "Prediabetes"
-
-            risk_level = "Intermediate Risk"
-
-            message = (
-                "The model predicts an intermediate "
-                "diabetes-risk category based on the "
-                "provided indicators."
-            )
-
-
-        elif prediction == 2:
-
-            result = "Diabetes"
-
-            risk_level = "Higher Risk"
-
-            message = (
-                "The model predicts a higher likelihood "
-                "of diabetes based on the provided indicators."
-            )
-
-
-        else:
-
-            result = "Unknown"
-
-            risk_level = "Unknown"
-
-            message = (
-                "The model returned an unexpected class."
-            )
-
-
-        # ----------------------------------------------------
-        # Confidence
-        # ----------------------------------------------------
-
-        confidence = None
-
-        if probabilities is not None:
-
-            confidence = round(
-
-                float(
-                    max(probabilities)
-                ) * 100,
-
-                2
-
-            )
-
-
-        # ----------------------------------------------------
-        # Response
-        # ----------------------------------------------------
+        confidence = round(max(probabilities) * 100, 2) if probabilities else None
 
         return jsonify({
-
             "success": True,
-
             "prediction": prediction,
-
             "result": result,
-
             "risk_level": risk_level,
-
             "confidence": confidence,
-
-            "message": message
-
+            "message": message,
+            "disclaimer": (
+                "Educational screening prototype only. This result is not a diagnosis. "
+                "Consult a qualified healthcare professional and appropriate laboratory tests."
+            ),
         })
-
-
-    except Exception as e:
-
-        print("--------------------------------------------")
-        print("Prediction Error:")
-        print(e)
-        print("--------------------------------------------")
-
+    except Exception:
+        app.logger.exception("Prediction API error")
         return jsonify({
-
             "success": False,
-
-            "error": str(e)
-
+            "error": "Prediction failed. Check the server logs for details.",
         }), 500
 
 
 # ============================================================
-# 11. START SERVER
+# 7. START SERVER
 # ============================================================
 
 if __name__ == "__main__":
+    port = int(os.environ.get("PORT", "5000"))
+    debug_mode = os.environ.get("FLASK_DEBUG", "0").lower() in {"1", "true", "yes"}
 
-    print("")
-    print("============================================")
-    print(" Diabetes Health Indicator Analysis")
-    print(" Flask Backend Starting...")
-    print("============================================")
+    print("=" * 48)
+    print("Diabetes Health Indicator Analysis")
+    print("Flask backend starting...")
+    print(f"Home:      http://127.0.0.1:{port}/")
+    print(f"Dashboard: http://127.0.0.1:{port}/dashboard")
+    print(f"Health:    http://127.0.0.1:{port}/health")
+    print(f"Analytics: http://127.0.0.1:{port}/api/analytics")
+    print("=" * 48)
 
-    print("")
-    print("Prediction:")
-    print("http://127.0.0.1:5000/")
-
-    print("")
-    print("Dashboard:")
-    print("http://127.0.0.1:5000/dashboard")
-
-    print("")
-    print("Health:")
-    print("http://127.0.0.1:5000/health")
-
-    print("")
-    print("Analytics API:")
-    print("http://127.0.0.1:5000/api/analytics")
-
-    print("")
-    print("============================================")
-
-
-    app.run(
-
-        host="127.0.0.1",
-
-        port=5000,
-
-        debug=True
-
-    )
+    # 0.0.0.0 is required for container/cloud hosting. Locally, open 127.0.0.1.
+    app.run(host="0.0.0.0", port=port, debug=debug_mode)
