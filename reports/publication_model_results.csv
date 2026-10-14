@@ -1,0 +1,6 @@
+Model,Original Accuracy (%),Original Macro Precision (%),Original Macro Recall (%),Original Macro F1 (%),5-Fold Accuracy (%),5-Fold Macro F1 (%)
+Logistic Regression,84.56,45.93,38.25,39.11,,
+Balanced Logistic Regression,64.66,44.5,52.19,42.67,,
+Decision Tree,84.52,55.77,39.29,40.48,,
+Random Forest,84.93,48.08,37.46,38.04,,
+Balanced Random Forest,68.1,43.37,50.77,43.01,,

@@ -1,0 +1,6 @@
+Model,Diabetes Precision,Diabetes Recall,Diabetes F1
+Logistic Regression,51.63,17.22,25.82
+Balanced Logistic Regression,35.31,58.54,44.05
+Decision Tree,50.75,20.64,29.34
+Random Forest,58.41,13.85,22.39
+Balanced Random Forest,32.74,68.78,44.36

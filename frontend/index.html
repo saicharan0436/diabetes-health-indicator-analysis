@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diabetes Insight | Health Screening</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+
+  <header class="topbar">
+    <a class="brand" href="/">
+      <span class="brand-mark">✚</span>
+      <span><strong>Diabetes</strong><small>Health Intelligence</small></span>
+    </a>
+    <nav>
+      <a class="nav-link active" href="/">Screening</a>
+      <a class="nav-link" href="/dashboard">Analytics Dashboard</a>
+    </nav>
+    <div class="model-pill"><span class="pulse"></span> Random Forest • Online</div>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">AI-ASSISTED HEALTH SCREENING</div>
+        <h1>Understand your<br><span>health indicators.</span></h1>
+        <p>Enter the health indicators below to generate a three-class screening prediction using your trained machine-learning model.</p>
+        <div class="hero-chips">
+          <span>✓ 18 indicators</span><span>✓ Instant prediction</span><span>✓ Academic project</span>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="mini-icon">◉</div>
+        <div><b>Model status</b><span>Connected to Flask API</span></div>
+        <div class="status-dot"></div>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <form id="predictionForm" class="form-card">
+        <div class="card-head">
+          <div><span class="section-number">01</span><div><h2>Health profile</h2><p>Basic health and lifestyle indicators</p></div></div>
+        </div>
+        <div class="field-grid">
+          <label>High Blood Pressure <select name="HighBP" required><option value="0">No</option><option value="1">Yes</option></select></label>
+          <label>High Cholesterol <select name="HighChol" required><option value="0">No</option><option value="1">Yes</option></select></label>
+          <label>BMI <input name="BMI" type="number" min="10" max="80" step="0.1" value="25" required /></label>
+          <label>Smoker <select name="Smoker" required><option value="0">No</option><option value="1">Yes</option></select></label>
+          <label>Stroke History <select name="Stroke" required><option value="0">No</option><option value="1">Yes</option></select></label>
+          <label>Heart Disease / Attack <select name="HeartDiseaseorAttack" required><option value="0">No</option><option value="1">Yes</option></select></label>
+          <label>Physical Activity <select name="PhysActivity" required><option value="1">Yes</option><option value="0">No</option></select></label>
+          <label>Fruits Regularly <select name="Fruits" required><option value="1">Yes</option><option value="0">No</option></select></label>
+          <label>Vegetables Regularly <select name="Veggies" required><option value="1">Yes</option><option value="0">No</option></select></label>
+          <label>Heavy Alcohol Consumption <select name="HvyAlcoholConsump" required><option value="0">No</option><option value="1">Yes</option></select></label>
+        </div>
+
+        <div class="divider"></div>
+        <div class="card-head compact"><div><span class="section-number">02</span><div><h2>Wellbeing & demographics</h2><p>Use the values that best match the test profile</p></div></div></div>
+        <div class="field-grid">
+          <label>General Health <select name="GenHlth" required><option value="1">Excellent</option><option value="2">Very Good</option><option value="3" selected>Good</option><option value="4">Fair</option><option value="5">Poor</option></select></label>
+          <label>Mental Health Days <input name="MentHlth" type="number" min="0" max="30" value="0" required /></label>
+          <label>Physical Health Days <input name="PhysHlth" type="number" min="0" max="30" value="0" required /></label>
+          <label>Difficulty Walking <select name="DiffWalk" required><option value="0">No</option><option value="1">Yes</option></select></label>
+          <label>Sex <select name="Sex" required><option value="1">Male</option><option value="0">Female</option></select></label>
+          <label>Age Group <select name="Age" required>
+            <option value="1">18–24</option><option value="2">25–29</option><option value="3">30–34</option><option value="4">35–39</option><option value="5">40–44</option><option value="6">45–49</option><option value="7">50–54</option><option value="8">55–59</option><option value="9" selected>60–64</option><option value="10">65–69</option><option value="11">70–74</option><option value="12">75–79</option><option value="13">80+</option>
+          </select></label>
+          <label>Education Level <select name="Education" required><option value="1">Never attended</option><option value="2">Elementary</option><option value="3">Some high school</option><option value="4">High school graduate</option><option value="5" selected>Some college</option><option value="6">College graduate</option></select></label>
+          <label>Income Category <select name="Income" required><option value="1">Lowest</option><option value="2">Low</option><option value="3">Lower-middle</option><option value="4">Middle</option><option value="5" selected>Upper-middle</option><option value="6">High</option><option value="7">Very high</option><option value="8">Highest</option></select></label>
+        </div>
+
+        <div class="form-footer">
+          <div class="privacy-note"><span>🔒</span><span><b>Demo data only</b><small>This academic prototype does not replace professional medical assessment.</small></span></div>
+          <button id="predictBtn" type="submit"><span>Run Screening</span><span class="arrow">→</span></button>
+        </div>
+      </form>
+
+      <aside id="resultPanel" class="result-card idle">
+        <div class="result-top"><span class="result-label">SCREENING RESULT</span><span class="live-badge">LIVE</span></div>
+        <div class="result-placeholder">
+          <div class="result-icon">✦</div>
+          <h3>Ready when you are</h3>
+          <p>Complete the profile and click <b>Run Screening</b> to see the model output here.</p>
+        </div>
+        <div class="result-content hidden">
+          <div class="result-ring"><span id="resultInitial">?</span></div>
+          <div class="result-text"><span class="muted">MODEL PREDICTION</span><h3 id="resultTitle">—</h3><span id="riskLevel" class="risk-tag">—</span></div>
+          <div class="confidence"><div class="confidence-head"><span>Confidence</span><b id="confidenceValue">—</b></div><div class="progress"><span id="confidenceBar"></span></div></div>
+          <p id="resultMessage" class="result-message"></p>
+        </div>
+        <div class="result-foot">Powered by your saved Random Forest model</div>
+      </aside>
+    </section>
+
+    <section class="info-strip">
+      <div><span class="info-icon">01</span><div><b>Three-class output</b><p>No Diabetes · Prediabetes · Diabetes</p></div></div>
+      <div><span class="info-icon">02</span><div><b>18 input indicators</b><p>Health, lifestyle & demographics</p></div></div>
+      <div><span class="info-icon">03</span><div><b>253,680 records</b><p>Dataset used for the project</p></div></div>
+      <div><span class="info-icon">04</span><div><b>Dashboard available</b><p>Explore dataset analytics</p></div></div>
+    </section>
+  </main>
+
+  <footer>Health Indicator Analysis for Diabetes Screening <span>•</span> DWDM Project</footer>
+  <script src="/script.js"></script>
+</body>
+</html>

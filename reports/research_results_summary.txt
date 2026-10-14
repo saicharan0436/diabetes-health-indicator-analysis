@@ -1,0 +1,55 @@
+DIABETES HEALTH INDICATOR ANALYSIS
+Research Results Summary
+============================================================
+
+
+FILE: publication_results_table.csv
+Rows: 5
+Columns: Experiment, Model, Accuracy (%), Macro Precision (%), Macro Recall (%), Macro F1 (%)
+         Experiment                        Model  Accuracy (%)  Macro Precision (%)  Macro Recall (%)  Macro F1 (%)
+Original Evaluation          Logistic Regression         84.56                45.93             38.25         39.11
+Original Evaluation Balanced Logistic Regression         64.66                44.50             52.19         42.67
+Original Evaluation                Decision Tree         84.52                55.77             39.29         40.48
+Original Evaluation                Random Forest         84.93                48.08             37.46         38.04
+Original Evaluation       Balanced Random Forest         68.10                43.37             50.77         43.01
+
+FILE: per_class_performance.csv
+Rows: 6
+Columns: Unnamed: 0, precision, recall, f1-score, support
+  Unnamed: 0  precision   recall  f1-score      support
+ No Diabetes   0.864021 0.965279  0.911848 42741.000000
+ Prediabetes   0.000000 0.000000  0.000000   926.000000
+    Diabetes   0.476629 0.197623  0.279400  7069.000000
+    accuracy   0.840705 0.840705  0.840705     0.840705
+   macro avg   0.446883 0.387634  0.397083 50736.000000
+weighted avg   0.794276 0.840705  0.807087 50736.000000
+NOT FOUND: class_imbalance_analysis.csv
+
+FILE: research_feature_importance.csv
+Rows: 18
+Columns: Feature, Importance
+  Feature  Importance
+      BMI    0.185863
+      Age    0.125629
+   Income    0.102884
+ PhysHlth    0.086356
+Education    0.074958
+  GenHlth    0.070322
+ MentHlth    0.067447
+   HighBP    0.042465
+   Fruits    0.035157
+   Smoker    0.035083
+NOT FOUND: shap_feature_importance.csv
+NOT FOUND: model_robustness_summary.csv
+
+============================================================
+INTERPRETATION CHECKLIST
+============================================================
+1. Compare accuracy with macro F1; accuracy alone may hide weak minority-class performance.
+2. Examine prediabetes recall in per_class_performance.csv.
+3. Use the confusion matrix to describe correct and incorrect predictions for each class.
+4. Compare model-based feature importance with SHAP importance if both files are available.
+5. Do not interpret feature importance as proof of causation or as a clinical diagnosis.
+6. Keep fixed-test results separate from cross-validation results and identify each evaluation method.
+
+This file summarizes available results. Missing files must be generated before drawing conclusions.

@@ -1,0 +1,6 @@
+Experiment,Model,Accuracy (%),Macro Precision (%),Macro Recall (%),Macro F1 (%)
+Original Evaluation,Logistic Regression,84.56,45.93,38.25,39.11
+Original Evaluation,Balanced Logistic Regression,64.66,44.5,52.19,42.67
+Original Evaluation,Decision Tree,84.52,55.77,39.29,40.48
+Original Evaluation,Random Forest,84.93,48.08,37.46,38.04
+Original Evaluation,Balanced Random Forest,68.1,43.37,50.77,43.01
